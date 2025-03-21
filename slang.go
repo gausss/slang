@@ -4,20 +4,21 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func main() {
-	args := os.Args[1:]
+	// args := os.Args[1:]
 
-	if len(args) > 1 {
-		fmt.Println("Usage: slang [file]")
-		os.Exit(64)
-	} else if len(args) == 1 {
-		runFile(args[0])
-	} else {
-		runPrompt()
-	}
+	// if len(args) > 1 {
+	// 	fmt.Println("Usage: slang [file]")
+	// 	os.Exit(64)
+	// } else if len(args) == 1 {
+	// 	runFile(args[0])
+	// } else {
+	// 	runPrompt()
+	// }
+
+	runFile("test.slang")
 
 }
 
@@ -27,6 +28,7 @@ func runPrompt() {
 	fmt.Print("> ")
 	text, _ := reader.ReadString('\n')
 	run(text)
+	hadError = false
 }
 
 func runFile(path string) {
@@ -36,10 +38,15 @@ func runFile(path string) {
 	}
 
 	run(string(data))
+
+	if hadError {
+		os.Exit(65)
+	}
 }
 
 func run(data string) {
-	tokens := strings.Fields(data)
+	scanner := &Scanner{data, []*Token{}, 0, 0, 0}
+	tokens := scanner.ScanTokens()
 
 	for _, token := range tokens {
 		fmt.Println(token)
