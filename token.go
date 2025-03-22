@@ -2,11 +2,11 @@ package main
 
 import "fmt"
 
-type TokenType int
+type TokenKind int
 
 const (
 	// Single-character tokens.
-	LEFT_PAREN TokenType = iota
+	LEFT_PAREN TokenKind = iota
 	RIGHT_PAREN
 	LEFT_BRACE
 	RIGHT_BRACE
@@ -58,10 +58,10 @@ const (
 )
 
 type Token struct {
-	tokenType TokenType
-	lexeme    string
-	literal   interface{}
-	line      int
+	kind    TokenKind
+	lexeme  string
+	literal interface{}
+	line    int
 }
 
 func (token Token) Print() {

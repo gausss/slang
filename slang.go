@@ -19,7 +19,6 @@ func main() {
 	// }
 
 	runFile("test.slang")
-
 }
 
 func runPrompt() {
