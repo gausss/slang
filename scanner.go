@@ -1,6 +1,29 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"unicode"
+)
+
+var reservedWords = map[string]TokenKind{
+	"and":    AND,
+	"class":  CLASS,
+	"else":   ELSE,
+	"false":  FALSE,
+	"for":    FOR,
+	"fun":    FUN,
+	"if":     IF,
+	"nil":    NIL,
+	"or":     OR,
+	"print":  PRINT,
+	"return": RETURN,
+	"super":  SUPER,
+	"this":   THIS,
+	"true":   TRUE,
+	"var":    VAR,
+	"while":  WHILE,
+}
 
 type Scanner struct {
 	source  string
@@ -81,6 +104,8 @@ func (scanner *Scanner) scanToken() {
 		} else {
 			scanner.addToken(SLASH)
 		}
+	case '"':
+		scanner.string()
 	case ' ':
 	case '\r':
 	case '\t':
@@ -88,13 +113,72 @@ func (scanner *Scanner) scanToken() {
 	case '\n':
 		scanner.line++
 	default:
-		Error(scanner.line, fmt.Sprintf("Unexpected character. %c", c))
+		if isDigit(c) {
+			scanner.number()
+		} else if isAlpha(c) {
+			scanner.identifier()
+		} else {
+			Error(scanner.line, fmt.Sprintf("Unexpected character. %c", c))
+		}
 	}
+}
+
+func isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		c == '_'
+}
+
+func isAlphaNumeric(c byte) bool {
+	return isAlpha(c) || isDigit(c)
+}
+
+func (scanner *Scanner) identifier() {
+	for isAlphaNumeric(scanner.peek()) {
+		scanner.advance()
+	}
+
+	value := scanner.source[scanner.start:scanner.current]
+	kind, kindExists := reservedWords[value]
+
+	if !kindExists {
+		kind = IDENTIFIER
+	}
+
+	scanner.addToken(kind)
+}
+
+func (scanner *Scanner) number() {
+	for isDigit(scanner.peek()) {
+		scanner.advance()
+	}
+
+	// Look for a fractional part.
+	if scanner.peek() == '.' && isDigit(scanner.peekNext()) {
+		// Consume the "."
+		scanner.advance()
+
+		for isDigit(scanner.peek()) {
+			scanner.advance()
+		}
+	}
+
+	value, _ := strconv.ParseFloat(scanner.source[scanner.start:scanner.current], 64)
+	scanner.addTokenLiteral(NUMBER, value)
+}
+
+func isDigit(c byte) bool {
+	return unicode.IsDigit(rune(c))
 }
 
 func (scanner *Scanner) addToken(tokenType TokenKind) {
 	text := scanner.source[scanner.start:scanner.current]
 	scanner.tokens = append(scanner.tokens, &Token{tokenType, text, nil, scanner.line})
+}
+
+func (scanner *Scanner) addTokenLiteral(tokenType TokenKind, literal interface{}) {
+	text := scanner.source[scanner.start:scanner.current]
+	scanner.tokens = append(scanner.tokens, &Token{tokenType, text, literal, scanner.line})
 }
 
 func (scanner *Scanner) advance() {
@@ -119,8 +203,37 @@ func (scanner *Scanner) match(expected byte) bool {
 
 func (scanner *Scanner) peek() byte {
 	if scanner.isAtEnd() {
-		return '0'
+		return ' '
 	}
 
 	return scanner.source[scanner.current]
+}
+
+func (scanner *Scanner) peekNext() byte {
+	if scanner.current+1 >= len(scanner.source) {
+		return ' '
+	}
+
+	return scanner.source[scanner.current+1]
+}
+
+func (scanner *Scanner) string() {
+	for scanner.peek() != '"' && !scanner.isAtEnd() {
+		if scanner.peek() == '\n' {
+			scanner.line++
+		}
+		scanner.advance()
+	}
+
+	if scanner.isAtEnd() {
+		Error(scanner.line, "Unterminated string.")
+		return
+	}
+
+	// The closing ".
+	scanner.advance()
+
+	// Trim the surrounding quotes.
+	value := scanner.source[scanner.start+1 : scanner.current-1]
+	scanner.addTokenLiteral(STRING, value)
 }

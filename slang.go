@@ -7,18 +7,16 @@ import (
 )
 
 func main() {
-	// args := os.Args[1:]
+	args := os.Args[1:]
 
-	// if len(args) > 1 {
-	// 	fmt.Println("Usage: slang [file]")
-	// 	os.Exit(64)
-	// } else if len(args) == 1 {
-	// 	runFile(args[0])
-	// } else {
-	// 	runPrompt()
-	// }
-
-	runFile("test.slang")
+	if len(args) > 1 {
+		fmt.Println("Usage: slang [file]")
+		os.Exit(64)
+	} else if len(args) == 1 {
+		runFile(args[0])
+	} else {
+		runPrompt()
+	}
 }
 
 func runPrompt() {
